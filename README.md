@@ -1,97 +1,275 @@
+# To-Do App Backend
+
 <p align="center">
   <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+A professional REST API backend for user authentication and management built with NestJS, MongoDB, and TypeScript.
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+This is a NestJS-based REST API backend providing:
+- User registration with secure password hashing
+- User login with credential validation
+- User deletion and management
+- MongoDB integration for persistent data storage
+- Professional 3-tier architecture (Presentation → Business → Data Access)
 
-## Project setup
+## Tech Stack
+
+- **Framework**: NestJS 11.0.1 (TypeScript framework for scalable server-side applications)
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: bcryptjs for password hashing (10 salt rounds)
+- **Language**: TypeScript
+- **Testing**: Jest unit tests + e2e tests
+- **Code Quality**: ESLint + Prettier
+- **Port**: 4500
+- **Database Endpoint**: MongoDB (localhost:27017/users)
+
+## Architecture
+
+Professional 3-tier clean architecture:
+
+```
+src/
+├── presentation/        ← HTTP layer
+│   ├── controllers/    (REST endpoints)
+│   └── dtos/          (Data transfer objects)
+├── business/           ← Business logic layer
+│   └── services/      (Core operations)
+├── data-access/        ← Database layer
+│   └── entities/      (MongoDB Mongoose schemas)
+├── users/              ← Users module
+└── shared/             (Global constants & configs)
+```
+
+## API Endpoints
+
+### Users Module (`/users`)
+
+| Endpoint | Method | Purpose | Request Body |
+|----------|--------|---------|--------------|
+| `/users/register` | POST | Register a new user | `{ email: string, password: string }` |
+| `/users/login` | POST | Authenticate user | `{ email: string, password: string }` |
+| `/users/:id` | DELETE | Delete user by ID | - |
+
+### Response Examples
+
+**Register Success:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "user@example.com",
+  "createdAt": "2026-03-25T10:30:00.000Z",
+  "message": "User registered successfully"
+}
+```
+
+**Login Success:**
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "email": "user@example.com",
+  "message": "Login successful"
+}
+```
+
+## Database Schema
+
+### User Entity
+
+```typescript
+User {
+  _id: ObjectId (MongoDB auto-generated)
+  id: string (UUID - unique identifier)
+  email: string (unique, lowercase, trimmed)
+  password: string (hashed with bcryptjs)
+  createdAt: timestamp (auto-generated)
+  updatedAt: timestamp (auto-updated)
+}
+```
+
+## How It Works
+
+### Registration Flow
+1. Client sends POST request with email + password
+2. Service checks if email already exists → throws `ConflictException` if found
+3. Password is hashed using bcryptjs (10 salt rounds for security)
+4. New user document is created in MongoDB
+5. Response returns user ID + email (password never exposed)
+
+### Login Flow
+1. Client sends POST request with email + password
+2. Service finds user by email (with password field included)
+3. Password comparison using bcryptjs.compare()
+4. Returns user info on success, `BadRequestException` on failure
+5. Password never returned in response
+
+### Delete Flow
+1. Client sends DELETE request with user ID
+2. Service removes user document from MongoDB
+3. Returns success message with deleted user ID
+4. Throws `BadRequestException` if user not found
+
+## Getting Started
+
+### Installation
 
 ```bash
 $ npm install
 ```
 
-## Compile and run the project
+### Running the Application
 
 ```bash
-# development
+# development mode
 $ npm run start
 
-# watch mode
+# watch mode (recommended for development)
 $ npm run start:dev
+
+# debug mode
+$ npm run start:debug
 
 # production mode
 $ npm run start:prod
 ```
 
-## Run tests
+The application will start on `http://localhost:4500`
+
+### Running Tests
 
 ```bash
 # unit tests
 $ npm run test
 
+# unit tests with watch mode
+$ npm run test:watch
+
+# test coverage report
+$ npm run test:cov
+
 # e2e tests
 $ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
 ```
+
+## Code Quality
+
+### Linting & Formatting
+
+```bash
+# run ESLint fix
+$ npm run lint
+
+# format code with Prettier
+$ npm run format
+```
+
+## Key Features
+
+✅ **Secure Password Storage**: Passwords are hashed with bcryptjs (10 salt rounds), never stored in plain text  
+✅ **Email Validation**: Prevents duplicate email registrations with unique constraint  
+✅ **Professional Architecture**: 3-tier clean architecture (Presentation → Business → Data Access)  
+✅ **Modular Design**: UsersModule is self-contained and easily exportable  
+✅ **Error Handling**: Proper HTTP exceptions for conflicts, bad requests, and validation  
+✅ **Timestamps**: Automatic `createdAt` and `updatedAt` tracking  
+✅ **Type Safety**: Full TypeScript implementation for compile-time safety  
+✅ **Security Best Practices**: No passwords in response, email validation, unique constraints  
+
+## Technologies Used
+
+- `@nestjs/common`: Core NestJS decorators and utilities
+- `@nestjs/core`: NestJS core module system
+- `@nestjs/mongoose`: MongoDB integration with Mongoose
+- `@nestjs/platform-express`: HTTP platform with Express
+- `mongoose`: MongoDB object modeling
+- `bcryptjs`: Password hashing library (industry standard)
+- `uuid`: Unique identifier generation
+- `TypeScript`: Static typing and advanced language features
+
+## Future Enhancements
+
+- JWT token-based authentication
+- Password reset functionality
+- Email verification
+- Role-based access control (RBAC)
+- Rate limiting
+- Task/Todo management system
+- User profile endpoints
+- Password change functionality
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Building for Production
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+# build the application
+$ npm run build
+
+# run production build
+$ npm run start:prod
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Environment Setup
 
-## Resources
+The application uses MongoDB for persistence. Ensure MongoDB is running:
 
-Check out a few resources that may come in handy when working with NestJS:
+```bash
+# local MongoDB setup
+mongod --dbpath /path/to/data
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+The database connection is configured in `src/shared/shared-constants.ts`:
+- Connection string: `mongodb://localhost:27017/users`
+- Database name: `users`
+- Collection: `users`
+
+### Cloud Deployment Options
+
+For cloud platforms, update the MongoDB connection string in `src/shared/shared-constants.ts`:
+
+```typescript
+public static readonly databaseEndpoint: string = 'your_mongodb_atlas_connection_string';
+```
+
+## Project Structure Explanation
+
+- **presentation/**: HTTP controllers and DTOs for request/response handling
+- **business/**: Service layer with core business logic and operations
+- **data-access/**: Database entities, schemas, and repository patterns
+- **users/**: Feature module bundling controllers, services, and imports
+- **shared/**: Global configuration like port and database endpoint
+
+## Module Dependencies
+
+```
+AppModule
+  ├── MongooseModule (connects to MongoDB)
+  └── UsersModule
+      ├── MongooseModule.forFeature([User])
+      ├── UsersController (REST endpoints)
+      └── UsersService (business logic)
+```
+
+## Contributing
+
+When adding new features:
+1. Create controller endpoints in `presentation/controllers/`
+2. Add service methods in `business/services/`
+3. Define DTOs in `presentation/dtos/`
+4. Update entity schemas in `data-access/entities/`
+5. Export new services/modules as needed
+
+## License
+
+This project is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 ## Support
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+For NestJS-specific questions, visit:
+- [NestJS Documentation](https://docs.nestjs.com)
+- [NestJS Discord Community](https://discord.gg/G7Qnnhy)
+- [NestJS Official Courses](https://courses.nestjs.com/)
 
 ## License
 
