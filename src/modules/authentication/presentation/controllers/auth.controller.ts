@@ -1,15 +1,15 @@
 import { Controller, Post, Body, Delete, Param, BadRequestException, HttpCode } from '@nestjs/common';
-import { UsersService } from '../../business/services/users.service';
-import { CreateUserDto } from '../dtos/create-user.dto';
+import { AuthService } from '../../business/services/auth.service';
+import { CreateUserDto } from '../dtos/register.dto';
 
 @Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
 
   // Register user
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
-    const user = await this.usersService.create(createUserDto);
+    const user = await this.authService.create(createUserDto);
     
     // Return user without password
     return {
@@ -23,13 +23,13 @@ export class UsersController {
   // Login user
   @Post('login')
   async login(@Body() loginDto: { email: string; password: string }) {
-    const user = await this.usersService.findByEmail(loginDto.email);
+    const user = await this.authService.findByEmail(loginDto.email);
     if (!user) {
       throw new BadRequestException('Invalid email or password');
     }
 
     // Validate password
-    const isPasswordValid = await this.usersService.validatePassword(
+    const isPasswordValid = await this.authService.validatePassword(
       loginDto.password,
       user.password,
     );
@@ -49,7 +49,7 @@ export class UsersController {
   @Delete(':id')
   @HttpCode(200)
   async remove(@Param('id') id: string) {
-    const deletedUser = await this.usersService.remove(id);
+    const deletedUser = await this.authService.remove(id);
     
     if (!deletedUser) {
       throw new BadRequestException('User not found');

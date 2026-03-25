@@ -1,5 +1,5 @@
 import { ConflictException, Injectable } from '@nestjs/common';
-import { CreateUserDto } from '../../presentation/dtos/create-user.dto';
+import { CreateUserDto } from '../../presentation/dtos/register.dto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
@@ -7,7 +7,7 @@ import { User, UserDocument } from '../../data-access/entities/user.entity';
 
 
 @Injectable()
-export class UsersService {
+export class AuthService {
 
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>, 
