@@ -14,7 +14,7 @@ export class User {
         default: () => uuidv4(),   
         immutable: true,
     })
-    id: string;
+    _id: string;
 
     @Prop({
         type: String,
@@ -28,7 +28,6 @@ export class User {
     @Prop({
         type: String,
         required: true,
-        select: false,   
     })
     password: string;
 

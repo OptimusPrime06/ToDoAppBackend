@@ -1,63 +1,48 @@
-import { Controller, Post, Body, Delete, Param, BadRequestException, HttpCode } from '@nestjs/common';
+import { 
+  Controller,
+  Post, 
+  Body, 
+  Headers, 
+  BadRequestException, 
+  HttpCode, 
+  HttpStatus, 
+  ConflictException, 
+  UnauthorizedException, 
+  UseGuards 
+} from '@nestjs/common';
 import { AuthService } from '../../business/services/auth.service';
-import { CreateUserDto } from '../dtos/register.dto';
+import { RegisterRequestDto } from '../dtos/register.request.dto';
+import { RegisterResponeDto } from '../dtos/register.response.dto';
+import { LoginRequestDto } from '../dtos/login.request.dto';
+import { LoginResponeDto } from '../dtos/login.response.dto';
 
-@Controller('users')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   // Register user
   @Post('register')
-  async register(@Body() createUserDto: CreateUserDto) {
-    const user = await this.authService.create(createUserDto);
+  async register(@Body() registerRequestDto: RegisterRequestDto): Promise<RegisterResponeDto> {
+    let userExist: boolean = await this.authService.userExist(registerRequestDto.email);
+
+    if (userExist) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    let response: RegisterResponeDto = await this.authService.registerUser(registerRequestDto);
     
-    // Return user without password
-    return {
-      id: user._id,
-      email: user.email,
-      createdAt: user.createdAt,
-      message: 'User registered successfully',
-    };
+    return response
   }
 
-  // Login user
+  // Login
   @Post('login')
-  async login(@Body() loginDto: { email: string; password: string }) {
-    const user = await this.authService.findByEmail(loginDto.email);
-    if (!user) {
-      throw new BadRequestException('Invalid email or password');
-    }
+  @HttpCode(HttpStatus.OK)
+  async login(@Body() loginRequestDto: LoginRequestDto): Promise<LoginResponeDto> {
 
-    // Validate password
-    const isPasswordValid = await this.authService.validatePassword(
-      loginDto.password,
-      user.password,
-    );
-    if (!isPasswordValid) {
-      throw new BadRequestException('Invalid email or password');
-    }
+    let response: LoginResponeDto | null = await this.authService.loginUser(loginRequestDto)
+    if(response === null) throw new UnauthorizedException();
 
-    // Return user data (without password)
-    return {
-      id: user._id,
-      email: user.email,
-      message: 'Login successful',
-    };
+    return response;
   }
 
-  // Delete user
-  @Delete(':id')
-  @HttpCode(200)
-  async remove(@Param('id') id: string) {
-    const deletedUser = await this.authService.remove(id);
-    
-    if (!deletedUser) {
-      throw new BadRequestException('User not found');
-    }
-
-    return {
-      message: 'User deleted successfully',
-      id: deletedUser._id,
-    };
-  }
 }

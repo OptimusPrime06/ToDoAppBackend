@@ -1,48 +1,70 @@
-import { ConflictException, Injectable } from '@nestjs/common';
-import { CreateUserDto } from '../../presentation/dtos/register.dto';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import * as bcrypt from 'bcryptjs';
-import { User, UserDocument } from '../../data-access/entities/user.entity';
-
+import { Injectable, Inject, UnauthorizedException } from '@nestjs/common';
+import { RegisterRequestDto } from '../../presentation/dtos/register.request.dto';
+import { RegisterResponeDto } from '../../presentation/dtos/register.response.dto';
+import { IAuthRepository } from '../repositories.interfaces/i.auth.repository';
+import { HashingService } from './hashing.service';
+import { SaveUserDto } from '../repositories.interfaces/save.user.dto';
+import { TokenService } from './token.service';
+import { LoginRequestDto } from '../../presentation/dtos/login.request.dto';
+import { LoginResponeDto } from '../../presentation/dtos/login.response.dto';
 
 @Injectable()
 export class AuthService {
 
-  constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>, 
-  ) {}
+  constructor( 
+    @Inject(IAuthRepository) private readonly authRepository: IAuthRepository,
+    @Inject() private readonly hashingService: HashingService,
+    @Inject() private readonly tokensServices: TokenService,
+  ){}
+
+  // Check if User exist
+  async userExist(email: string): Promise<boolean> {
+    const emailInUse = await this.authRepository.checkExistingUser(email); 
+    return emailInUse
+  }
 
   // Register user
-async create(createUserData: { email: string; password: string }): Promise<UserDocument> {
-      
-    const existingUser = await this.userModel.findOne({ email: createUserData.email }); // Check for existing user
-    if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+async registerUser(requestRegisterDto: RegisterRequestDto): Promise<RegisterResponeDto> {  
+
+    let hashedPassword: string = await this.hashingService.hashPassword(requestRegisterDto.password);
+
+    let newSavedUser: SaveUserDto = await this.authRepository.saveUser(requestRegisterDto.email, hashedPassword);
+
+    let newUserResponseDto: RegisterResponeDto = {
+      id: newSavedUser.id,
+      email: newSavedUser.email,
     }
 
-    const hashedPassword = await bcrypt.hash(createUserData.password, 10); // Hash password
-
-    const newUser = new this.userModel({
-      email: createUserData.email,
-      password: hashedPassword,
-  });
-
-  return newUser.save();
-
-  }
+  return newUserResponseDto;
+}
 
   // Login
-  async findByEmail(email: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ email }).select('+password').exec();
+  async loginUser(loginRequestDto: LoginRequestDto): Promise<LoginResponeDto | null> {
+    // Validate password
+    let passwordMatch: boolean = await this.hashingService.validatePassword(loginRequestDto.email, loginRequestDto.password)
+    if (passwordMatch === false) {
+      return null
+    }
+    
+    let userId: string | null = await this.authRepository.getUserId(loginRequestDto.email);
+    if (userId === null) {
+      return null
+    }
+
+    // Generate access and refresh tokens
+    let payload = {
+      email: loginRequestDto.email,
+      id: userId
+    }
+    let accessToken: string = await this.tokensServices.generateAccessToken(payload);
+    let refreshToken: string = await this.tokensServices.generateRefreshToken(payload);
+
+    return {
+      email: loginRequestDto.email,
+      id: userId,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    };
   }
 
-  async validatePassword(plainPassword: string, hashedPassword: string): Promise<boolean> {
-      return bcrypt.compare(plainPassword, hashedPassword);
-  }
-
-  // Delete user
-  async remove(id: string): Promise<UserDocument | null> {
-    return this.userModel.findByIdAndDelete(id).exec();
-  }
 }
