@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './modules/authentication/auth.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -12,7 +12,7 @@ import { AuthModule } from './modules/authentication/auth.module';
       serverSelectionTimeoutMS: 5000,
     }),
     AuthModule,
-    //User module to update password if forgotten
+    UsersModule,
     //Notes module
   ],
   controllers: [AppController],
